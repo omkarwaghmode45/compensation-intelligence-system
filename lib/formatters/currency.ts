@@ -13,11 +13,11 @@ export function formatCompactInr(value: number) {
   const sign = value < 0 ? "-" : "";
 
   if (absoluteValue >= 10_000_000) {
-    return `${sign}INR ${trimDecimal(absoluteValue / 10_000_000)} Cr`;
+    return `${sign}₹${trimDecimal(absoluteValue / 10_000_000)} Cr`;
   }
 
   if (absoluteValue >= 100_000) {
-    return `${sign}INR ${trimDecimal(absoluteValue / 100_000)} L`;
+    return `${sign}₹${trimDecimal(absoluteValue / 100_000)} L`;
   }
 
   return `${sign}${formatInr(absoluteValue)}`;

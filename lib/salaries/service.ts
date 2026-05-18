@@ -1,14 +1,14 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, Salary } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatCompanyName } from "@/lib/formatters/company";
-import { displayCompanyName, normalizeCompanyName } from "@/lib/salaries/normalization";
-import type {
-  ComparableSalary,
-  CompanyInsight,
-  CompensationBreakdownSummary,
-  LevelDistribution,
-  SalaryListItem
+import {
+  type ComparableSalary,
+  type CompanyInsight,
+  type CompensationBreakdownSummary,
+  type LevelDistribution,
+  type SalaryListItem
 } from "@/lib/salaries/types";
+import { normalizeCompanyName } from "@/lib/salaries/normalization";
 import { salaryQuerySchema, type SalaryQueryInput, type SalarySubmissionInput } from "@/lib/salaries/validation";
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -16,34 +16,43 @@ type RawSearchParams = Record<string, string | string[] | undefined>;
 const salarySelect = {
   id: true,
   company: true,
-  normalizedCompany: true,
   role: true,
   level: true,
   location: true,
-  experienceYears: true,
-  baseSalary: true,
+  experience_years: true,
+  base_salary: true,
   bonus: true,
   stock: true,
-  totalCompensation: true,
-  confidenceScore: true,
-  createdAt: true
-} satisfies Prisma.SalarySubmissionSelect;
+  total_compensation: true,
+  confidence_score: true,
+  created_at: true
+} satisfies Prisma.SalarySelect;
+
+type SelectedSalary = Pick<Salary, keyof typeof salarySelect>;
 
 export async function createSalarySubmission(input: SalarySubmissionInput) {
+  const company = normalizeCompanyName(input.company);
   const bonus = input.bonus ?? 0;
   const stock = input.stock ?? 0;
   const totalCompensation = input.baseSalary + bonus + stock;
 
-  return prisma.salarySubmission.create({
+  const salary = await prisma.salary.create({
     data: {
-      ...input,
+      company,
+      role: input.role,
+      level: input.level,
+      location: input.location,
+      experience_years: input.experienceYears ? Math.round(input.experienceYears) : undefined,
+      base_salary: input.baseSalary,
       bonus,
       stock,
-      totalCompensation,
-      normalizedCompany: normalizeCompanyName(input.company)
+      total_compensation: totalCompensation,
+      confidence_score: input.confidenceScore
     },
     select: salarySelect
   });
+
+  return mapSalary(salary);
 }
 
 export async function listSalaries(rawFilters: RawSearchParams | SalaryQueryInput = {}): Promise<SalaryListItem[]> {
@@ -51,31 +60,33 @@ export async function listSalaries(rawFilters: RawSearchParams | SalaryQueryInpu
   const where = buildSalaryWhere(filters);
   const orderBy = buildSalaryOrderBy(filters.sort);
 
-  return withReadFallback(() =>
-    prisma.salarySubmission.findMany({
+  const salaries = await withReadFallback(() =>
+    prisma.salary.findMany({
       where,
       orderBy,
       select: salarySelect,
       take: 100
     })
   );
+
+  return salaries.map(mapSalary);
 }
 
 export async function getCompanyInsights(): Promise<CompanyInsight[]> {
   const grouped = await withReadFallback(() =>
-    prisma.salarySubmission.groupBy({
-      by: ["normalizedCompany"],
+    prisma.salary.groupBy({
+      by: ["company"],
       _count: { _all: true },
-      _avg: { totalCompensation: true },
-      orderBy: { _avg: { totalCompensation: "desc" } }
+      _avg: { total_compensation: true },
+      orderBy: { _avg: { total_compensation: "desc" } }
     })
   );
 
   return grouped.map((company) => ({
-    company: displayCompanyName(company.normalizedCompany),
-    normalizedCompany: company.normalizedCompany,
+    company: formatCompanyName(company.company),
+    normalizedCompany: company.company,
     submissions: company._count._all,
-    averageTotalCompensation: Math.round(company._avg.totalCompensation ?? 0)
+    averageTotalCompensation: Math.round(company._avg.total_compensation ?? 0)
   }));
 }
 
@@ -88,7 +99,8 @@ export async function listComparableSalaries(): Promise<ComparableSalary[]> {
   }));
 }
 
-export async function getCompanyDetail(normalizedCompany: string) {
+export async function getCompanyDetail(company: string) {
+  const normalizedCompany = normalizeCompanyName(company);
   const salaries = await listSalaries({ company: normalizedCompany, sort: "totalCompensation:desc" });
 
   if (salaries.length === 0) {
@@ -100,7 +112,7 @@ export async function getCompanyDetail(normalizedCompany: string) {
   );
 
   return {
-    company: displayCompanyName(normalizedCompany),
+    company: formatCompanyName(normalizedCompany),
     normalizedCompany,
     submissions: salaries.length,
     averageTotalCompensation,
@@ -128,15 +140,16 @@ export async function compareSalaries(rawFilters: RawSearchParams) {
 
   return Promise.all(
     companies.map(async (company) => {
-      const salaries = await listSalaries({ ...sharedFilters, company });
+      const normalizedCompany = normalizeCompanyName(company);
+      const salaries = await listSalaries({ ...sharedFilters, company: normalizedCompany });
       const averageTotalCompensation =
         salaries.length === 0
           ? 0
           : Math.round(salaries.reduce((sum, salary) => sum + salary.totalCompensation, 0) / salaries.length);
 
       return {
-        label: displayCompanyName(normalizeCompanyName(company)),
-        company: normalizeCompanyName(company),
+        label: formatCompanyName(normalizedCompany),
+        company: normalizedCompany,
         submissions: salaries.length,
         averageTotalCompensation
       };
@@ -144,26 +157,51 @@ export async function compareSalaries(rawFilters: RawSearchParams) {
   );
 }
 
-function buildSalaryWhere(filters: SalaryQueryInput): Prisma.SalarySubmissionWhereInput {
+function buildSalaryWhere(filters: SalaryQueryInput): Prisma.SalaryWhereInput {
   return {
-    normalizedCompany: filters.company ? normalizeCompanyName(filters.company) : undefined,
+    company: filters.company ? normalizeCompanyName(filters.company) : undefined,
     role: filters.role ? { contains: filters.role, mode: "insensitive" } : undefined,
     level: filters.level,
     location: filters.location ? { contains: filters.location, mode: "insensitive" } : undefined,
-    experienceYears: {
-      gte: filters.minExperience,
-      lte: filters.maxExperience
+    experience_years: {
+      gte: filters.minExperience ? Math.round(filters.minExperience) : undefined,
+      lte: filters.maxExperience ? Math.round(filters.maxExperience) : undefined
     }
   };
 }
 
-function buildSalaryOrderBy(sort = "totalCompensation:desc"): Prisma.SalarySubmissionOrderByWithRelationInput {
+function buildSalaryOrderBy(sort = "totalCompensation:desc"): Prisma.SalaryOrderByWithRelationInput {
   const [field, direction] = sort.split(":") as [
     "totalCompensation" | "baseSalary" | "experienceYears" | "createdAt",
     "asc" | "desc"
   ];
 
-  return { [field]: direction };
+  const fieldMap = {
+    totalCompensation: "total_compensation",
+    baseSalary: "base_salary",
+    experienceYears: "experience_years",
+    createdAt: "created_at"
+  } satisfies Record<typeof field, keyof Prisma.SalaryOrderByWithRelationInput>;
+
+  return { [fieldMap[field]]: direction };
+}
+
+function mapSalary(salary: SelectedSalary): SalaryListItem {
+  return {
+    id: salary.id,
+    company: salary.company,
+    normalizedCompany: salary.company,
+    role: salary.role,
+    level: salary.level as SalaryListItem["level"],
+    location: salary.location,
+    experienceYears: salary.experience_years,
+    baseSalary: salary.base_salary,
+    bonus: salary.bonus,
+    stock: salary.stock,
+    totalCompensation: salary.total_compensation,
+    confidenceScore: salary.confidence_score ?? 0.75,
+    createdAt: salary.created_at
+  };
 }
 
 function normalizeSearchParams(rawFilters: RawSearchParams | SalaryQueryInput) {
@@ -243,6 +281,7 @@ function isDatabaseUnavailable(error: unknown) {
   return (
     error.name === "PrismaClientInitializationError" ||
     error.message.includes("Can't reach database server") ||
-    error.message.includes("Environment variable not found: DATABASE_URL")
+    error.message.includes("Environment variable not found: DATABASE_URL") ||
+    error.message.includes("does not exist")
   );
 }

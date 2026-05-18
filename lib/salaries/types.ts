@@ -1,4 +1,4 @@
-import type { Level } from "@prisma/client";
+export type Level = "L3" | "L4" | "L5" | "L6" | "L7";
 
 export type SalaryListItem = {
   id: string;

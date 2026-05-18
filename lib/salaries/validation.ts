@@ -33,7 +33,7 @@ export const salaryIngestSchema = z
     role: input.role,
     level: input.level,
     location: input.location,
-    experienceYears: input.experience_years,
+    experienceYears: input.experience_years ? Math.round(input.experience_years) : undefined,
     baseSalary: input.base_salary,
     bonus: input.bonus,
     stock: input.stock,
