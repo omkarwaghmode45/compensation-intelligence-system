@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatCompanyName } from "@/lib/formatters/company";
-import { formatInr } from "@/lib/formatters/currency";
+import { formatCompactInr, formatSignedCompactInr } from "@/lib/formatters/currency";
 import type { ComparableSalary } from "@/lib/salaries/types";
 
 type CompensationField = {
@@ -161,7 +161,7 @@ function DifferenceSummary({
           <h2 className="mt-1 text-2xl font-semibold tracking-tight">{leader}</h2>
         </div>
         <div className="text-left md:text-right">
-          <p className="text-3xl font-semibold">{formatInr(absoluteDifference)}</p>
+          <p className="text-3xl font-semibold">{formatCompactInr(absoluteDifference)}</p>
           <p className="mt-1 text-sm text-slate-300">{percentDifference.toFixed(1)}% difference</p>
         </div>
       </div>
@@ -187,7 +187,7 @@ function SalarySnapshot({ salary, align }: { salary: ComparableSalary; align: "l
       </div>
       <div className="mt-5 rounded bg-panel p-4">
         <p className="text-sm font-medium text-slate-600">Total compensation</p>
-        <p className="mt-1 text-3xl font-semibold text-ink">{formatInr(salary.totalCompensation)}</p>
+        <p className="mt-1 text-3xl font-semibold text-ink">{formatCompactInr(salary.totalCompensation)}</p>
       </div>
     </section>
   );
@@ -230,10 +230,10 @@ function ComparisonTable({
               return (
                 <tr key={field.key}>
                   <td className="px-4 py-3 font-medium text-slate-700">{field.label}</td>
-                  <td className="px-4 py-3">{formatInr(leftSalary[field.key])}</td>
-                  <td className="px-4 py-3">{formatInr(rightSalary[field.key])}</td>
+                  <td className="px-4 py-3">{formatCompactInr(leftSalary[field.key])}</td>
+                  <td className="px-4 py-3">{formatCompactInr(rightSalary[field.key])}</td>
                   <td className="px-4 py-3 text-right">
-                    <span className={differenceClassName(difference)}>{formatSignedInr(difference)}</span>
+                    <span className={differenceClassName(difference)}>{formatSignedCompactInr(difference)}</span>
                   </td>
                 </tr>
               );
@@ -246,17 +246,9 @@ function ComparisonTable({
 }
 
 function formatSalaryOption(salary: ComparableSalary) {
-  return `${formatCompanyName(salary.company)} - ${salary.role} - ${salary.level} - ${formatInr(
+  return `${formatCompanyName(salary.company)} - ${salary.role} - ${salary.level} - ${formatCompactInr(
     salary.totalCompensation
   )}`;
-}
-
-function formatSignedInr(value: number) {
-  if (value === 0) {
-    return formatInr(0);
-  }
-
-  return `${value > 0 ? "+" : "-"}${formatInr(Math.abs(value))}`;
 }
 
 function differenceClassName(value: number) {
