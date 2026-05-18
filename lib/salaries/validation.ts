@@ -27,8 +27,10 @@ export const salaryIngestSchema = z
     bonus: moneySchema.optional().default(0),
     stock: moneySchema.optional().default(0),
     // Accept either `confidence_score` (0-1) or `confidence` (0-100) from external ingestors
-    confidence_score: z.coerce.number().min(0).max(1).optional().default(undefined),
-    confidence: z.coerce.number().min(0).max(100).optional().default(undefined)
+   confidence_score: z.coerce.number().min(0).max(1).optional(),
+
+confidence: z.coerce.number().min(0).max(100).optional(),
+
   })
   .transform((input) => ({
     company: input.company.trim().toLowerCase(),
