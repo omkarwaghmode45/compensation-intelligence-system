@@ -83,8 +83,8 @@ export async function getCompanyInsights(): Promise<CompanyInsight[]> {
   );
 
   return grouped.map((company) => ({
-    company: formatCompanyName(company.company),
-    normalizedCompany: company.company,
+    company: formatCompanyName(company.company ?? ""),
+    normalizedCompany: company.company ?? "",
     submissions: company._count._all,
     averageTotalCompensation: Math.round(company._avg.total_compensation ?? 0)
   }));

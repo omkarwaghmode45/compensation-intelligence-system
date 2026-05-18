@@ -30,7 +30,8 @@ export async function POST(request: Request) {
       {
         data: {
           id: salary.id,
-          company: salary.normalizedCompany,
+          company_display: salary.company,
+          company_normalized: salary.normalizedCompany,
           role: salary.role,
           level: salary.level,
           location: salary.location,

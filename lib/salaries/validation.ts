@@ -26,7 +26,9 @@ export const salaryIngestSchema = z
     base_salary: moneySchema,
     bonus: moneySchema.optional().default(0),
     stock: moneySchema.optional().default(0),
-    confidence_score: z.coerce.number().min(0).max(1).optional().default(0.75)
+    // Accept either `confidence_score` (0-1) or `confidence` (0-100) from external ingestors
+    confidence_score: z.coerce.number().min(0).max(1).optional().default(undefined),
+    confidence: z.coerce.number().min(0).max(100).optional().default(undefined)
   })
   .transform((input) => ({
     company: input.company.trim().toLowerCase(),
@@ -37,7 +39,13 @@ export const salaryIngestSchema = z
     baseSalary: input.base_salary,
     bonus: input.bonus,
     stock: input.stock,
-    confidenceScore: input.confidence_score
+    // normalize confidence: prefer `confidence_score` (0-1), fall back to `confidence` (0-100)
+    confidenceScore: (() => {
+      const score = input.confidence_score ?? input.confidence;
+      if (score === undefined || score === null) return 0.75;
+      // if value looks like a percent (0-100), convert to 0-1
+      return score > 1 ? Math.min(1, score / 100) : Math.max(0, Math.min(1, score));
+    })()
   }));
 
 export const salaryQuerySchema = z.object({

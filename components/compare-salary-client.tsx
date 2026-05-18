@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatCompanyName } from "@/lib/formatters/company";
 import { formatInr } from "@/lib/formatters/currency";
 import type { ComparableSalary } from "@/lib/salaries/types";
@@ -24,8 +24,23 @@ const detailFields = [
 ] as const;
 
 export function CompareSalaryClient({ salaries }: { salaries: ComparableSalary[] }) {
-  const [leftId, setLeftId] = useState(salaries[0]?.id ?? "");
-  const [rightId, setRightId] = useState(salaries[1]?.id ?? "");
+  // initialize empty and derive distinct defaults in effect to avoid accidental duplicates
+  const [leftId, setLeftId] = useState("");
+  const [rightId, setRightId] = useState("");
+
+  useEffect(() => {
+    if (!salaries || salaries.length === 0) return;
+
+    // set left to first available if not already set
+    setLeftId((prev) => prev || salaries[0].id);
+
+    // choose the first different salary for right side
+    setRightId((prev) => {
+      if (prev && prev !== (salaries[0]?.id ?? "")) return prev;
+      const candidate = salaries.find((s) => s.id !== (prev || salaries[0].id));
+      return candidate?.id ?? salaries[1]?.id ?? salaries[0].id;
+    });
+  }, [salaries]);
 
   const leftSalary = useMemo(() => salaries.find((salary) => salary.id === leftId), [leftId, salaries]);
   const rightSalary = useMemo(() => salaries.find((salary) => salary.id === rightId), [rightId, salaries]);
