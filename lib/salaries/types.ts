@@ -13,7 +13,7 @@ export type SalaryListItem = {
   stock: number;
   totalCompensation: number;
   confidenceScore: number;
-  createdAt: Date;
+  createdAt: Date | string;
 };
 
 export type ComparableSalary = Omit<SalaryListItem, "createdAt" | "normalizedCompany">;

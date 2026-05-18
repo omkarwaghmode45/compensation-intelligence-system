@@ -1,13 +1,15 @@
-import { SalaryFilters } from "@/components/salary-filters";
-import { SalaryTable } from "@/components/salary-table";
+import { SalaryExplorer } from "@/components/salary-explorer";
+import type { SalaryFilterValues } from "@/components/salary-filters";
 import { listSalaries } from "@/lib/salaries/service";
 
 export const dynamic = "force-dynamic";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
-export default async function Home({ searchParams }: { searchParams: SearchParams }) {
-  const salaries = await listSalaries(searchParams);
+export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const resolvedSearchParams = await searchParams;
+  const salaries = await listSalaries(resolvedSearchParams);
+  const initialFilters = getInitialFilters(resolvedSearchParams);
 
   return (
     <div className="space-y-6">
@@ -17,8 +19,21 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
           Compare pay by standardized level, company, role, and location.
         </h1>
       </section>
-      <SalaryFilters />
-      <SalaryTable salaries={salaries} />
+      <SalaryExplorer initialFilters={initialFilters} initialSalaries={salaries} />
     </div>
   );
+}
+
+function getInitialFilters(searchParams: SearchParams): SalaryFilterValues {
+  return {
+    company: firstValue(searchParams.company) ?? "",
+    role: firstValue(searchParams.role) ?? "",
+    level: firstValue(searchParams.level) ?? "",
+    location: firstValue(searchParams.location) ?? "",
+    sort: firstValue(searchParams.sort) ?? "totalCompensation:desc"
+  };
+}
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
