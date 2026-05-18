@@ -1,11 +1,12 @@
 import type { SalaryListItem } from "@/lib/salaries/types";
+import { formatCompanyName } from "@/lib/formatters/company";
 import { formatCompactInr } from "@/lib/formatters/currency";
 
 export function SalaryTable({ salaries }: { salaries: SalaryListItem[] }) {
   if (salaries.length === 0) {
     return (
       <div className="rounded border border-dashed border-line p-8 text-center text-slate-600">
-        No salary submissions match the current filters.
+        No salaries found. Try adjusting your filters.
       </div>
     );
   }
@@ -30,10 +31,10 @@ export function SalaryTable({ salaries }: { salaries: SalaryListItem[] }) {
           <tbody className="divide-y divide-line bg-white">
             {salaries.map((salary) => (
               <tr key={salary.id}>
-                <td className="px-4 py-3 font-medium">{salary.company}</td>
+                <td className="px-4 py-3 font-medium">{formatCompanyName(salary.company)}</td>
                 <td className="px-4 py-3">{salary.role}</td>
                 <td className="px-4 py-3">{salary.level}</td>
-                <td className="px-4 py-3">{salary.location}</td>
+                <td className="px-4 py-3">{salary.location ?? "Remote / unspecified"}</td>
                 <td className="px-4 py-3 text-right">{formatCompactInr(salary.baseSalary)}</td>
                 <td className="px-4 py-3 text-right">{formatCompactInr(salary.bonus)}</td>
                 <td className="px-4 py-3 text-right">{formatCompactInr(salary.stock)}</td>

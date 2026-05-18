@@ -21,8 +21,8 @@ model SalarySubmission {
   normalizedCompany  String
   role               String
   level              Level
-  location           String
-  experienceYears    Float
+  location           String?
+  experienceYears    Float?
   baseSalary         Int
   bonus              Int      @default(0)
   stock              Int      @default(0)

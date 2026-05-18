@@ -8,13 +8,37 @@ export const salarySubmissionSchema = z.object({
   company: z.string().trim().min(1).max(120),
   role: z.string().trim().min(1).max(120),
   level: levelSchema,
-  location: z.string().trim().min(1).max(120),
-  experienceYears: z.coerce.number().min(0).max(60),
+  location: z.string().trim().min(1).max(120).optional(),
+  experienceYears: z.coerce.number().min(0).max(60).optional(),
   baseSalary: moneySchema,
   bonus: moneySchema.optional().default(0),
   stock: moneySchema.optional().default(0),
   confidenceScore: z.coerce.number().min(0).max(1).optional().default(0.75)
 });
+
+export const salaryIngestSchema = z
+  .object({
+    company: z.string().trim().min(1).max(120),
+    role: z.string().trim().min(1).max(120),
+    level: levelSchema,
+    location: z.string().trim().min(1).max(120).optional(),
+    experience_years: z.coerce.number().min(0).max(60).optional(),
+    base_salary: moneySchema,
+    bonus: moneySchema.optional().default(0),
+    stock: moneySchema.optional().default(0),
+    confidence_score: z.coerce.number().min(0).max(1).optional().default(0.75)
+  })
+  .transform((input) => ({
+    company: input.company.trim().toLowerCase(),
+    role: input.role,
+    level: input.level,
+    location: input.location,
+    experienceYears: input.experience_years,
+    baseSalary: input.base_salary,
+    bonus: input.bonus,
+    stock: input.stock,
+    confidenceScore: input.confidence_score
+  }));
 
 export const salaryQuerySchema = z.object({
   company: z.string().trim().optional(),
@@ -37,4 +61,5 @@ export const salaryQuerySchema = z.object({
 });
 
 export type SalarySubmissionInput = z.infer<typeof salarySubmissionSchema>;
+export type SalaryIngestInput = z.infer<typeof salaryIngestSchema>;
 export type SalaryQueryInput = z.infer<typeof salaryQuerySchema>;

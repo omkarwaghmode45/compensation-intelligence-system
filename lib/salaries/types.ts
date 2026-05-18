@@ -6,8 +6,8 @@ export type SalaryListItem = {
   normalizedCompany: string;
   role: string;
   level: Level;
-  location: string;
-  experienceYears: number;
+  location: string | null;
+  experienceYears: number | null;
   baseSalary: number;
   bonus: number;
   stock: number;

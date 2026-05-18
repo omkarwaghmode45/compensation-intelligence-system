@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { formatCompanyName } from "@/lib/formatters/company";
 import { displayCompanyName, normalizeCompanyName } from "@/lib/salaries/normalization";
 import type {
   ComparableSalary,
@@ -83,7 +84,7 @@ export async function listComparableSalaries(): Promise<ComparableSalary[]> {
 
   return salaries.map(({ createdAt, normalizedCompany, ...salary }) => ({
     ...salary,
-    company: displayCompanyName(normalizedCompany)
+    company: formatCompanyName(normalizedCompany)
   }));
 }
 

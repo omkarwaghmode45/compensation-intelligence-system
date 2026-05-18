@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { formatCompanyName } from "@/lib/formatters/company";
 import { formatInr } from "@/lib/formatters/currency";
 import type { ComparableSalary } from "@/lib/salaries/types";
 
@@ -161,7 +162,7 @@ function SalarySnapshot({ salary, align }: { salary: ComparableSalary; align: "l
           <p className="text-sm font-semibold uppercase tracking-wide text-accent">{salary.company}</p>
           <h2 className="mt-1 text-xl font-semibold text-ink">{salary.role}</h2>
           <p className="mt-1 text-sm text-slate-600">
-            {salary.level} · {salary.location} · {salary.experienceYears} yrs exp
+            {salary.level} - {salary.location ?? "Remote / unspecified"} - {salary.experienceYears ?? "N/A"} yrs exp
           </p>
         </div>
         <div className={align === "right" ? "text-right" : "text-left"}>
@@ -230,7 +231,9 @@ function ComparisonTable({
 }
 
 function formatSalaryOption(salary: ComparableSalary) {
-  return `${salary.company} · ${salary.role} · ${salary.level} · ${formatInr(salary.totalCompensation)}`;
+  return `${formatCompanyName(salary.company)} - ${salary.role} - ${salary.level} - ${formatInr(
+    salary.totalCompensation
+  )}`;
 }
 
 function formatSignedInr(value: number) {
